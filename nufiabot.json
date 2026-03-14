@@ -1,0 +1,162 @@
+{
+  "name": "nufiabot",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Untuk menjawab pertanyaan tentang program yang tersedia, \nkamu HARUS menggunakan tool Google Sheets yang tersedia.\nJangan menjawab dari pengetahuan sendiri."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        768,
+        176
+      ],
+      "id": "b9d889bc-a279-4e22-b54f-907eb66da15e",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        752,
+        352
+      ],
+      "id": "1b2da15e-d88e-4f2a-aa98-9d3d79dfd290",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "o280BwJGfFsuEVVt",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        848,
+        352
+      ],
+      "id": "06b80cac-fc54-419b-9d48-d25eb7e2417e",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Gunakan tool ini untuk mengambil data program pelatihan dan kursus \nyang tersedia di NFA Academy dari Google Sheets. \nGunakan ketika user bertanya tentang program, kursus, atau pelatihan yang ada.",
+        "documentId": {
+          "__rl": true,
+          "value": "1jGupBkkhJcyoq00V4aEtjC9nz4PzT9UHj0GUVw641xA",
+          "mode": "list",
+          "cachedResultName": "n8n 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jGupBkkhJcyoq00V4aEtjC9nz4PzT9UHj0GUVw641xA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jGupBkkhJcyoq00V4aEtjC9nz4PzT9UHj0GUVw641xA/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        928,
+        336
+      ],
+      "id": "8c8e5b17-6599-4707-a40b-4d6353bc144e",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "xgHBDoZrPLqaSjeF",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hi there! 👋\nMy name is Nufian. How can I assist you today?",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        512,
+        176
+      ],
+      "id": "bcb0c6ef-350f-46c7-898a-610771ddc8e4",
+      "name": "When chat message received",
+      "webhookId": "d21350cb-77f0-4840-a423-ad76bd4b8061"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "7dc8fcab-01a3-4ca7-84b4-53998a615add",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ce29953f9b185e9e775866169e2e2094fed5d779826932a2851669cbe032fdc1"
+  },
+  "id": "WtnYhcUQ4DS3pQMS",
+  "tags": []
+}
