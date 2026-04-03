@@ -1,0 +1,336 @@
+{
+  "name": "AI Image Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "30ff8919-b609-45e2-9f61-18c9b8585aff",
+              "leftValue": "=success",
+              "rightValue": "={{ $json.data.state }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -96,
+        -80
+      ],
+      "id": "052b3da2-1289-4800-a915-ac8d7ce0bc4a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "995221627",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        -256
+      ],
+      "id": "564147bd-ab48-48dd-b593-1ca288741303",
+      "name": "Kirim hasil generate",
+      "webhookId": "7c91ad08-5cd3-4ffb-9cdb-870f59399f0c",
+      "credentials": {
+        "telegramApi": {
+          "id": "gHpT94s3t2IZiNP9",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        336,
+        -256
+      ],
+      "id": "5e5a4606-c2ee-4677-8592-800de0292ace",
+      "name": "Download gambar"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nconst result = JSON.parse($json.data.resultJson);\n\nreturn [{\n  img1: result.resultUrls[0] || null,\n  img2: result.resultUrls[1] || null,\n  img3: result.resultUrls[2] || null,\n  img4: result.resultUrls[3] || null\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        -256
+      ],
+      "id": "ec30bbe0-3015-4ef3-888d-7c67129fdb38",
+      "name": "Format result"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nconst urls = [\n  $json.img1,\n  $json.img2,\n  $json.img3,\n  $json.img4\n].filter(Boolean);\n\n// jadikan 1 URL = 1 item\nreturn urls.map((url, index) => ({\n  json: {\n    url,\n    index: index + 1\n  }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        -256
+      ],
+      "id": "5f11e1e5-349b-409a-a7ce-66e5513cad54",
+      "name": "Loop image"
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -432,
+        -80
+      ],
+      "id": "32805d0c-488b-458e-95f9-06a4caff5eb6",
+      "name": "Menunggu proses generate image",
+      "webhookId": "aa064f9c-ca6d-4f81-9a73-5f3db73d5373"
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/jobs/recordInfo",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $json.data.taskId }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $node[\"Submit text prompt untuk generate gambar\"].json[\"api_key\"] }} "
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -272,
+        -80
+      ],
+      "id": "33659c87-41c6-4179-93c9-b7c145c9c496",
+      "name": "Mendapat status generate"
+    },
+    {
+      "parameters": {
+        "formTitle": "Generate Gambar Konten Otomatis",
+        "formDescription": "Isi informasi berikut untuk mulai proses generate gambar",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Prompt",
+              "fieldName": "prompt"
+            },
+            {
+              "fieldLabel": "Image",
+              "fieldName": "img_url"
+            },
+            {
+              "fieldLabel": "Task Type",
+              "fieldName": "task_type"
+            },
+            {
+              "fieldLabel": "API key",
+              "fieldName": "api_key"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -784,
+        -80
+      ],
+      "id": "9b7a4273-3add-4f72-b338-8b0a40e20580",
+      "name": "Submit text prompt untuk generate gambar",
+      "webhookId": "c40dbaa0-62b7-4219-8c3a-fdd412692f17"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/jobs/createTask",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.api_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n{\n  \"model\": \"grok-imagine/text-to-image\",\n  \"input\": {\n    \"prompt\": $json.prompt.replace(/\"/g, '\\\\\"'),\n    \"aspect_ratio\": \"3:2\"\n  }\n}\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -592,
+        -80
+      ],
+      "id": "c128ec2e-635b-4f80-9d02-929ac56924b7",
+      "name": "image generation req"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Format result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Menunggu proses generate image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download gambar": {
+      "main": [
+        [
+          {
+            "node": "Kirim hasil generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format result": {
+      "main": [
+        [
+          {
+            "node": "Loop image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop image": {
+      "main": [
+        [
+          {
+            "node": "Download gambar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Menunggu proses generate image": {
+      "main": [
+        [
+          {
+            "node": "Mendapat status generate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mendapat status generate": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Submit text prompt untuk generate gambar": {
+      "main": [
+        [
+          {
+            "node": "image generation req",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "image generation req": {
+      "main": [
+        [
+          {
+            "node": "Menunggu proses generate image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9cc61cb1-928e-40a0-b638-3a1e44f01018",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b766258bef240b4657e5d370a0210a1fd10e3fe15565b3312d7b17c83a8cf202"
+  },
+  "id": "2xOIySXDJfHorYIZ",
+  "tags": []
+}
