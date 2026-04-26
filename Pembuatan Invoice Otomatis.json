@@ -1,0 +1,228 @@
+{
+  "name": "Pembuatan Invoice Otomatis",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Pembuatan Invoice Otomatis",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Nama Klien",
+              "fieldName": "Nama Klien"
+            },
+            {
+              "fieldLabel": "Email Klien",
+              "fieldName": "Email Klien"
+            },
+            {
+              "fieldLabel": "Jam Kerja",
+              "fieldName": "Jam Kerja"
+            },
+            {
+              "fieldLabel": "Rate",
+              "fieldName": "Rate"
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false,
+          "path": "895f7e05-838e-478d-93b3-821e34af13ae",
+          "ignoreBots": true
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        464,
+        -208
+      ],
+      "id": "19a36e4f-8fb8-4a44-b927-3302bfddef78",
+      "name": "On form submission",
+      "webhookId": "895f7e05-838e-478d-93b3-821e34af13ae"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3d6f30f5-fb70-41c3-bc7f-ddbe667492e9",
+              "name": "Total Biaya",
+              "value": "={{ \n  (Number($json[\"Jam Kerja\"]) * Number\n($json[\"Rate\"].replace(/\\./g, \"\")))\n    .toLocaleString(\"id-ID\")\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        -208
+      ],
+      "id": "2618c732-5e10-4d28-abe0-3f1c6b146939",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n<html lang=\"id\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Invoice - {{ $('On form submission').item.json['Nama Klien'] }}</title>\n    <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n    <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n    <link href=\"https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">\n    <style>\n        /* CSS Reset Minimal */\n        body, h1, h2, h3, h4, p, table, th, td { margin: 0; padding: 0; box-sizing: border-box; }\n\n        body {\n            font-family: 'Poppins', sans-serif;\n            background-color: #FFF9E3; /* Butter Yellow Background */\n            color: #1a1a1a;\n            padding: 40px;\n            font-size: 14px;\n        }\n\n        .invoice-container {\n            max-width: 850px;\n            margin: auto;\n            background-color: #ffffff;\n            border-radius: 8px;\n            padding: 50px;\n            box-shadow: 0 10px 30px rgba(0,0,0,0.1);\n            /* Ini bagian item-item di atas layer dalam */\n            border-top: 10px solid #000000; \n            position: relative;\n        }\n\n        .invoice-header {\n            display: flex;\n            justify-content: space-between;\n            align-items: flex-start;\n            margin-bottom: 40px;\n            padding-bottom: 20px;\n            /* Garis tetep hitam tapi dibikin 1px biar nggak terlalu kereng */\n            border-bottom: 1px solid #000000; \n        }\n\n        .company-logo {\n            font-size: 32px;\n            font-weight: 700; /* Dikurangi dari 800 biar gak numpuk/gepeng */\n            color: #000000;\n            margin-bottom: 10px; /* Tambahan jarak ke bawah biar gak nempel */\n            /* Uppercase dan letter-spacing dihapus biar natural */\n        }\n\n        .company-details p {\n            font-size: 13px;\n            color: #444;\n            line-height: 1.4;\n        }\n\n        .invoice-meta {\n            text-align: right;\n        }\n\n        .invoice-title {\n            font-size: 36px;\n            font-weight: 700;\n            color: #000000;\n            margin-bottom: 10px;\n            line-height: 1;\n        }\n\n        .invoice-details p {\n            color: #555;\n            margin-bottom: 5px;\n        }\n\n        .invoice-details strong {\n            color: #000;\n        }\n\n        .invoice-addresses {\n            display: flex;\n            justify-content: space-between;\n            margin-bottom: 50px;\n        }\n\n        .address-box {\n            width: 45%;\n        }\n\n        .address-box h3 {\n            font-size: 12px;\n            text-transform: uppercase;\n            letter-spacing: 1px;\n            color: #000;\n            margin-bottom: 12px;\n            font-weight: 700;\n            border-bottom: 1px solid #000;\n            display: inline-block;\n        }\n\n        .address-content p {\n            line-height: 1.6;\n        }\n\n        .address-content .client-name {\n            font-size: 18px;\n            font-weight: 700;\n            margin-bottom: 3px;\n            color: #000;\n        }\n\n        .address-content .client-email {\n            color: #000;\n            font-weight: 500;\n            text-decoration: underline;\n        }\n\n        .invoice-table {\n            width: 100%;\n            border-collapse: collapse;\n            margin-bottom: 40px;\n        }\n\n        .invoice-table th {\n            text-align: left;\n            padding: 15px;\n            background-color: #000000; /* Header Tabel Hitam */\n            color: #ffffff;\n            font-size: 12px;\n            text-transform: uppercase;\n            font-weight: 600;\n        }\n\n        .invoice-table td {\n            padding: 18px 15px;\n            border-bottom: 1px solid #ddd;\n        }\n\n        .invoice-table td.qty-rate, .invoice-table th.qty-rate,\n        .invoice-table td.subtotal, .invoice-table th.subtotal {\n            text-align: right;\n        }\n\n        .item-description {\n            font-weight: 600;\n            color: #000;\n        }\n\n        .invoice-summary {\n            display: flex;\n            justify-content: flex-end;\n            margin-bottom: 50px;\n        }\n\n        .summary-box {\n            width: 40%;\n        }\n\n        .summary-item {\n            display: flex;\n            justify-content: space-between;\n            padding: 10px 0;\n            font-size: 14px;\n        }\n\n        .summary-item.total {\n            margin-top: 10px;\n            padding: 15px 0;\n            font-size: 22px;\n            font-weight: 800;\n            color: #000;\n            border-top: 1px solid #000000; /* Disamain jadi 1px */\n        }\n\n        .invoice-footer {\n            border-top: 1px solid #ddd;\n            padding-top: 30px;\n            text-align: center;\n            color: #666;\n            font-size: 12px;\n            line-height: 1.6;\n        }\n\n        .currency {\n            font-weight: 700;\n        }\n\n        .invoice-number {\n            background-color: #000;\n            color: #fff;\n            padding: 2px 10px;\n            border-radius: 20px;\n            font-size: 12px;\n        }\n\n    </style>\n</head>\n<body>\n    <div class=\"invoice-container\">\n        <div class=\"invoice-header\">\n            <div class=\"company-details\">\n                <div class=\"company-logo\">Ays Company</div>\n                <p>Jl. Jend. Sudirman Kav. 50</p>\n                <p>Jakarta Selatan, Indonesia, 12930</p>\n                <p>support@ayscompany.co.id</p>\n            </div>\n            <div class=\"invoice-meta\">\n                <div class=\"invoice-title\">INVOICE</div>\n                <div class=\"invoice-details\">\n                    <p>No: <span class=\"invoice-number\">INV-2008</span></p>\n                    <p>Tanggal: <strong>14 April 2026</strong></p>\n                    <p>Tempo: <strong>28 April 2026</strong></p>\n                </div>\n            </div>\n        </div>\n\n        <div class=\"invoice-addresses\">\n            <div class=\"address-box\">\n                <h3>Dari</h3>\n                <div class=\"address-content\">\n                    <p class=\"client-name\">Ays Company</p>\n                    <p>Tim Pengembang Aplikasi</p>\n                    <p>Layanan Pengembangan Software Kustom</p>\n                </div>\n            </div>\n            <div class=\"address-box\">\n                <h3>Ditagihkan Kepada</h3>\n                <div class=\"address-content\">\n                    <p class=\"client-name\">{{ $('On form submission').item.json['Nama Klien'] }}</p>\n                    <p class=\"client-email\">{{ $('On form submission').item.json['Email Klien'] }}</p>\n                    <p>Jakarta, Indonesia</p>\n                </div>\n            </div>\n        </div>\n\n        <table class=\"invoice-table\">\n            <thead>\n                <tr>\n                    <th>Deskripsi Layanan</th>\n                    <th class=\"qty-rate\">Jam</th>\n                    <th class=\"qty-rate\">Rate (Rp)</th>\n                    <th class=\"subtotal\">Subtotal (Rp)</th>\n                </tr>\n            </thead>\n            <tbody>\n                <tr>\n                    <td class=\"item-description\">Jasa Pekerjaan / Konsultasi Sistem</td>\n                    <td class=\"qty-rate\">{{ $('On form submission').item.json['Jam Kerja'] }}</td>\n                    <td class=\"qty-rate\">{{ $('On form submission').item.json.Rate }}</td>\n                    <td class=\"subtotal\"><span class=\"currency\">{{ $json[\"Total Biaya\"] }}</span></td>\n                </tr>\n            </tbody>\n        </table>\n\n        <div class=\"invoice-summary\">\n            <div class=\"summary-box\">\n                <div class=\"summary-item\">\n                    <span>Subtotal</span>\n                    <span>{{ $json[\"Total Biaya\"] }}</span>\n                </div>\n                <div class=\"summary-item\">\n                    <span>Pajak (0%)</span>\n                    <span>0</span>\n                </div>\n                <div class=\"summary-item total\">\n                    <strong>Total</strong>\n                    <strong><span class=\"currency\">Rp {{ $json[\"Total Biaya\"] }}</span></strong>\n                </div>\n            </div>\n        </div>\n\n        <div class=\"invoice-footer\">\n            <p><strong>Syarat &amp; Ketentuan</strong></p>\n            <p>Pembayaran penuh jatuh tempo dalam waktu 14 hari sejak tanggal invoice.</p>\n            <p>Silakan hubungi kami di support@ayscompany.co.id untuk pertanyaan pembayaran.</p>\n            <br>\n            <p><em>Invoice ini dibuat secara otomatis oleh sistem internal Ays.</em></p>\n            <p>Terima kasih atas kepercayaan Anda bermitra dengan <strong>Ays Company</strong>.</p>\n        </div>\n    </div>\n</body>\n</html>"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        -208
+      ],
+      "id": "61536bc9-45a3-4703-9595-e012daf7792f",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "html_content": "={{ $json.html }}"
+      },
+      "type": "n8n-nodes-htmlcsstopdf.htmlcsstopdf",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        -208
+      ],
+      "id": "a50915cb-fd84-4b26-add7-2e6928a4f2ab",
+      "name": "HTML to PDF",
+      "credentials": {
+        "htmlcsstopdfApi": {
+          "id": "fnBFQPWiPjVbq8rd",
+          "name": "HTML to PDF account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.pdf_url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1312,
+        -208
+      ],
+      "id": "43943aef-7d9d-4f5b-8d0f-c32f37eecd17",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('On form submission').item.json['Email Klien'] }}",
+        "subject": "=Invoice dari Ays Company untuk {{ $('On form submission').item.json['Email Klien'] }}",
+        "message": "=Yth. <strong>{{ $('On form submission').item.json['Nama Klien'] }}</strong>,<br><br>\n\nTerima kasih atas kepercayaan Anda telah menggunakan jasa kami.<br>\nBersama email ini, kami lampirkan invoice untuk pekerjaan yang telah diselesaikan.<br><br>\n\nBerikut adalah ringkasan singkat tagihan Anda:<br>\n<ul>\n    <li><strong>Total Jam Kerja:</strong> {{ $('On form submission').item.json['Jam Kerja'] }} jam</li>\n    <li><strong>Total Tagihan:</strong> Rp {{ $('Edit Fields').item.json['Total Biaya'] }}</li>\n    <li><strong>Jatuh Tempo:</strong> 14 hari</li>\n</ul><br>\n\nDetail lengkap, termasuk rincian pekerjaan dan instruksi pembayaran, dapat Anda temukan pada file PDF yang terlampir: <a href=\"{{ $('HTML to PDF').item.json.pdf_url }}\">{{ $('HTML to PDF').item.json.pdf_url }}</a><br><br>\n\n<blockquote style=\"margin: 0; padding-left: 10px; border-left: 3px solid #cccccc; color: #555555;\">\n    <strong><i>Catatan Keamanan:</strong> <i>Untuk melindungi Anda, kami tidak akan pernah meminta informasi password atau data sensitif melalui email. Harap lakukan pembayaran hanya ke nomor rekening resmi yang tertera di dalam invoice PDF.</i>\n</blockquote><br>\n\nJika ada pertanyaan lebih lanjut, jangan ragu untuk membalas email ini.<br><br>\n\nHormat kami,<br>\n<br>\n<strong>[Chanelle / Ays Company]<strong><br>\n[Manoban / 123456789]",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1520,
+        -208
+      ],
+      "id": "2d5609d0-2a74-456c-aa82-739ab8d15d85",
+      "name": "Send a message",
+      "webhookId": "ab1d8397-4d24-4757-a902-528f981fd316",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "KRp0QxzEg2rFfY5j",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "On form submission": [
+      {
+        "json": {
+          "Nama Klien": "Aisyah Haniina",
+          "Email Klien": "aisy23097si@student.nurulfikri.ac.id",
+          "Jam Kerja": "50",
+          "Rate": "300.000",
+          "submittedAt": "2026-04-14T12:20:51.084+07:00",
+          "formMode": "test"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "HTML to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML to PDF": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "fc78bb35-f02f-4454-86e5-3c88c01fe0a6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "19baa3fcdede89df0e8bb38343dc216567c1fc33e4610ed0ed91fee0d034392a"
+  },
+  "id": "bAbYJ5NLWgkpviDg",
+  "tags": []
+}

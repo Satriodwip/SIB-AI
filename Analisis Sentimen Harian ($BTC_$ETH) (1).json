@@ -1,0 +1,381 @@
+{
+  "name": "Analisis Sentimen Harian ($BTC_$ETH)",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze the sentiment of the following tweet. Respond ONLY with ONE word: 'Positive', 'Negative', or 'Neutral'.\n\nTweet:\n{{ $json.text }}\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        416,
+        0
+      ],
+      "id": "d848ac28-711f-48b1-a790-15cd1df59877",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        416,
+        160
+      ],
+      "id": "a78c07a2-2af7-43f3-abc9-9a52f40b2916",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "WFdHV6gTa4Hs6MHt",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "88112399-46f5-4717-b7cf-4ca914b4c74c",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 7
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        336
+      ],
+      "id": "cae87263-2c8c-4a35-af26-5c5518343d31",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1YbgGjclj45KXOZIGNiflTr653SnW5YXnmQND7G_3gFA",
+          "mode": "list",
+          "cachedResultName": "$BTC dan $ETH Sentimen Media Sosial",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YbgGjclj45KXOZIGNiflTr653SnW5YXnmQND7G_3gFA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YbgGjclj45KXOZIGNiflTr653SnW5YXnmQND7G_3gFA/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        336
+      ],
+      "id": "fac11332-80d9-4168-87f6-edba9314725b",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "AIvnPeo647KM59ro",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gunakan $input.all() untuk mengambil semua item dari node sebelumnya\nconst items = $input.all();\n\nlet positive = 0;\nlet negative = 0;\nlet neutral = 0;\nlet total = 0;\n\n// Loop melalui setiap baris\nfor (const item of items) {\n  const sentiment = item.json.Sentiment;\n\n  if (sentiment === 'Positive') {\n    positive++;\n  } else if (sentiment === 'Negative') {\n    negative++;\n  } else if (sentiment === 'Neutral') {\n    neutral++;\n  }\n}\n\ntotal = items.length;\n\n// Kembalikan hasil perhitungan\nreturn [{\n  json: {\n    total_tweets: total,\n    sentimen_positif: positive,\n    sentimen_negatif: negative,\n    sentimen_netral: neutral\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        336
+      ],
+      "id": "e1947acd-f9ae-42ee-8f32-2cf6ecb37abf",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Anda adalah seorang analis sentimen media sosial.\nTuliskan kesimpulan singkat (dalam bahasa Indonesia) untuk laporan Telegram, berdasarkan data berikut:\n\n- Total Tweet Dianalisis: {{ $json.total_tweets }}\n- Sentimen Positif: {{ $json.sentimen_positif }}\n- Sentimen Negatif: {{ $json.sentimen_negatif }}\n- Sentimen Netral: {{ $json.sentimen_netral }}\n\nBerikan ringkasan singkat tentang apa arti angka-angka ini (misalnya, \"Sentimen hari ini cenderung positif,\" \"Ada banyak keraguan di pasar,\" dll.).",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        592,
+        336
+      ],
+      "id": "694337bc-8071-4ced-a9fa-c0c79a755cbe",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "chatId": "995221627",
+        "text": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        944,
+        336
+      ],
+      "id": "13df55cc-a7a4-4652-933e-0c51458681d4",
+      "name": "Send a text message",
+      "webhookId": "42ddc80d-06a8-48eb-aa2e-e9cbe85b4f10",
+      "credentials": {
+        "telegramApi": {
+          "id": "gHpT94s3t2IZiNP9",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        592,
+        512
+      ],
+      "id": "272d9630-e73e-443f-b138-3097626fe47d",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "WFdHV6gTa4Hs6MHt",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ff3fea29-c556-41cc-90aa-d25e95e84397",
+              "name": "text",
+              "value": "={\n  \"BTC\": {\n    \"total\": 90,\n    \"bullish\": 33,\n    \"bearish\": 31,\n    \"neutral\": 26,\n    \"avg_compound\": 0.0039,\n    \"signal\": \"NEUTRAL\",\n    \"scraped_at\": \"2026-04-22T03:31:56.582085\"\n  },\n  \"ETH\": {\n    \"total\": 77,\n    \"bullish\": 31,\n    \"bearish\": 33,\n    \"neutral\": 13,\n    \"avg_compound\": -0.042,\n    \"signal\": \"NEUTRAL\",\n    \"scraped_at\": \"2026-04-22T03:31:56.582635\"\n  }\n}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e88516f4-8539-4485-ba1a-6f08bad30209",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1YbgGjclj45KXOZIGNiflTr653SnW5YXnmQND7G_3gFA",
+          "mode": "list",
+          "cachedResultName": "$BTC dan $ETH Sentimen Media Sosial",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YbgGjclj45KXOZIGNiflTr653SnW5YXnmQND7G_3gFA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YbgGjclj45KXOZIGNiflTr653SnW5YXnmQND7G_3gFA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Sentiment": "={{ $json.text }}",
+            "Timestamp": "={{ $('Schedule Trigger').item.json.timestamp }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sentiment",
+              "displayName": "Sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        768,
+        0
+      ],
+      "id": "9f9db11b-ad3a-4875-bfce-3061104c2f8a",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "AIvnPeo647KM59ro",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "515cb175-a17c-4da8-8a7a-bacfb15b5ccf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b766258bef240b4657e5d370a0210a1fd10e3fe15565b3312d7b17c83a8cf202"
+  },
+  "id": "u64WHsUsdeGKxEJg",
+  "tags": []
+}
