@@ -1,0 +1,996 @@
+{
+  "name": "Agregator Performance Review 360",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1FdSla086eQzzImWE1T1G8cdKoDi5-H-VI1rfEPSw4Po",
+          "mode": "list",
+          "cachedResultName": "Performance Review 360 Derajat Karyawan (Jawaban)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FdSla086eQzzImWE1T1G8cdKoDi5-H-VI1rfEPSw4Po/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1931838202,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FdSla086eQzzImWE1T1G8cdKoDi5-H-VI1rfEPSw4Po/edit#gid=1931838202"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3280,
+        -16
+      ],
+      "id": "c3e2db22-51de-419e-93e2-89e21cf5dcef",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "Zi9tLxBX8dzalS0w",
+          "name": "Google Sheets Trigger account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function convertGoogleSerialToPeriod(value) {\n  if (value === null || value === undefined || value === '') return '';\n\n  const stringValue = String(value).trim();\n\n  if (/^\\d{4}-\\d{2}$/.test(stringValue)) {\n    return stringValue;\n  }\n\n  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(stringValue)) {\n    return stringValue.slice(0, 7);\n  }\n\n  if (/^\\d{1,2}\\/\\d{1,2}\\/\\d{4}$/.test(stringValue)) {\n    const [day, month, year] = stringValue.split('/');\n    return `${year}-${String(month).padStart(2, '0')}`;\n  }\n\n  if (/^\\d{1,2}-\\d{1,2}-\\d{4}$/.test(stringValue)) {\n    const [day, month, year] = stringValue.split('-');\n    return `${year}-${String(month).padStart(2, '0')}`;\n  }\n\n  if (!isNaN(stringValue)) {\n    const serial = Number(stringValue);\n    const utcDays = Math.floor(serial - 25569);\n    const utcValue = utcDays * 86400;\n    const date = new Date(utcValue * 1000);\n\n    const y = date.getUTCFullYear();\n    const m = String(date.getUTCMonth() + 1).padStart(2, '0');\n\n    return `${y}-${m}`;\n  }\n\n  return stringValue;\n}\n\nreturn items.map(item => {\n  const row = item.json;\n\n  const periode = convertGoogleSerialToPeriod(\n    row['Periode Penilaian (Format YYYY-MM, Contoh: 2026-05)'] ||\n    row['Periode'] ||\n    ''\n  );\n\n  return {\n    json: {\n      ID_Karyawan: String(row['ID Karyawan (Misalnya: EMP001)'] || row.ID_Karyawan || '').trim(),\n      Nama: String(row['Nama Karyawan yang Dinilai (Misalnya: Budi Santoso)'] || row.Nama || '').trim(),\n      Divisi: String(row['Divisi Karyawan'] || row.Divisi || '').trim(),\n      Jabatan: String(row['Jabatan Karyawan (Misalnya: Staff IT Support)'] || row.Jabatan || '').trim(),\n      Nama_Penilai: String(row['Nama Lengkap Penilai'] || row.Nama_Penilai || '').trim(),\n      Penilai_Role: String(row['Peran Penilai (Penilai Role)'] || row.Penilai_Role || '').trim(),\n      Skor: Number(row['Skor Performa Umum'] || row.Skor || 0),\n      Kedisiplinan: Number(row['Kedisiplinan'] || 0),\n      Kualitas_Kerja: Number(row['Kualitas Kerja'] || row.Kualitas_Kerja || 0),\n      Komunikasi: Number(row['Komunikasi'] || 0),\n      Kerja_Sama_Tim: Number(row['Kerja Sama Tim'] || row.Kerja_Sama_Tim || 0),\n      Tanggung_Jawab: Number(row['Tanggung Jawab'] || row.Tanggung_Jawab || 0),\n      Komentar: String(row['Komentar Umum Mengenai Performa'] || row.Komentar || '').trim(),\n      Kekuatan_Karyawan: String(row['Kekuatan Karyawan'] || row.Kekuatan_Karyawan || '').trim(),\n      Area_Pengembangan: String(row['Area Pengembangan (Hal yang Perlu Ditingkatkan)'] || row.Area_Pengembangan || '').trim(),\n      Rekomendasi_Tindakan: String(row['Rekomendasi Tindakan Pengembangan'] || row.Rekomendasi_Tindakan || '').trim(),\n      Periode: periode\n    }\n  };\n}).filter(item => {\n  return (\n    item.json.ID_Karyawan &&\n    item.json.Nama &&\n    item.json.Penilai_Role &&\n    item.json.Periode\n  );\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3072,
+        -16
+      ],
+      "id": "55d2a009-15e4-4b0e-baa5-dfef905ca2aa",
+      "name": "Normalize Trigger Row"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sourceItems = items.map(item => item.json);\nconst groups = {};\n\nfor (const row of sourceItems) {\n  const id = String(row.ID_Karyawan || '').trim();\n  const nama = String(row.Nama || '').trim();\n  const periode = String(row.Periode || '').trim();\n  const role = String(row.Penilai_Role || '').trim();\n\n  if (!id || !nama || !periode || !role) continue;\n\n  const groupKey = `${id}_${periode}`;\n\n  if (!groups[groupKey]) {\n    groups[groupKey] = {\n      ID_Karyawan: id,\n      Nama: nama,\n      Divisi: row.Divisi || '',\n      Jabatan: row.Jabatan || '',\n      Periode: periode,\n      evaluasi: []\n    };\n  }\n\n  groups[groupKey].evaluasi.push({\n    nama_penilai: row.Nama_Penilai || '',\n    role_penilai: role,\n    skor_performa_umum: row.Skor || 0,\n    kedisiplinan: row.Kedisiplinan || 0,\n    kualitas_kerja: row.Kualitas_Kerja || 0,\n    komunikasi: row.Komunikasi || 0,\n    kerja_sama_tim: row.Kerja_Sama_Tim || 0,\n    tanggung_jawab: row.Tanggung_Jawab || 0,\n    komentar_umum: row.Komentar || '',\n    kekuatan_karyawan: row.Kekuatan_Karyawan || '',\n    area_pengembangan: row.Area_Pengembangan || '',\n    rekomendasi_tindakan: row.Rekomendasi_Tindakan || ''\n  });\n}\n\nreturn Object.values(groups).map(employee => {\n  const roles = [\n    ...new Set(\n      employee.evaluasi.map(e =>\n        String(e.role_penilai || '').trim().toLowerCase()\n      )\n    )\n  ];\n\n  const adaAtasan = roles.includes('atasan');\n  const adaRekan = roles.includes('rekan');\n  const adaBawahan = roles.includes('bawahan');\n\n  return {\n    json: {\n      ...employee,\n      total_penilai: employee.evaluasi.length,\n      role_tersedia: roles,\n      data_lengkap: adaAtasan && adaRekan && adaBawahan,\n      debug: {\n        total_input_dari_normalize: sourceItems.length,\n        role_terbaca: roles\n      }\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2864,
+        -16
+      ],
+      "id": "4024da35-d346-4447-b4d0-7068328c5238",
+      "name": "Filter & Group Same Period"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "20fd2f12-f58a-4df4-ab18-16fdbb9b9007",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -2608,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "PASTE_TELEGRAM_CHAT_ID_HERE",
+        "text": "✅ Proses pengecekan evaluasi performance review selesai.",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "d62b0ccd-58d9-4837-a32f-f9c5beaa5471",
+      "name": "Telegram - Proses Selesai",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2384,
+        -256
+      ],
+      "webhookId": "bbdafad8-d926-4337-99d0-a9786736e4fb",
+      "credentials": {
+        "telegramApi": {
+          "id": "nDwpvfBycAEBFcSj",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "condition-data-lengkap",
+              "leftValue": "={{ $json.data_lengkap }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b586fc76-016e-4ac5-bf25-8ea05041874f",
+      "name": "IF Data Lengkap?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2352,
+        0
+      ],
+      "notes": "True jika sudah ada Atasan, Rekan, dan Bawahan."
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "id": "d1d41f7d-ee2c-46f0-a482-fc5d179e79bd",
+      "name": "Wait 1 Detik",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2080,
+        -16
+      ],
+      "webhookId": "wait-performance-review-ai"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Buatkan ringkasan evaluasi performa karyawan berdasarkan data penilaian 360 derajat berikut.\n\nData Karyawan:\n- ID Karyawan: {{ $json.ID_Karyawan }}\n- Nama Karyawan: {{ $json.Nama }}\n- Divisi: {{ $json.Divisi }}\n- Jabatan: {{ $json.Jabatan }}\n- Periode: {{ $json.Periode }}\n\nData Evaluasi 360 Derajat:\n{{ JSON.stringify($json.evaluasi, null, 2) }}\n\nInstruksi:\n1. Analisis data dari 3 perspektif penilai: Atasan, Rekan, dan Bawahan.\n2. Gunakan skor performa umum, kedisiplinan, kualitas kerja, komunikasi, kerja sama tim, dan tanggung jawab sebagai dasar analisis.\n3. Gunakan komentar umum, kekuatan karyawan, area pengembangan, dan rekomendasi tindakan sebagai bahan kesimpulan.\n4. Jangan hanya menyalin komentar dari penilai.\n5. Buat hasil evaluasi yang formal, objektif, konstruktif, dan cocok dikirim ke Manajer HR.\n6. Jika terdapat perbedaan penilaian antar role penilai, jelaskan secara netral.\n\nFormat jawaban wajib:\n\n*Kekuatan Utama:*\n1. ...\n2. ...\n3. ...\n\n*Area Pengembangan:*\n1. ...\n2. ...\n3. ...\n\n*Rekomendasi Tindakan:*\n1. ...\n2. ...\n\n*Kesimpulan Singkat:*\n...",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -1840,
+        -16
+      ],
+      "id": "1883a43f-8416-4c93-a6a8-5fe7b1ce09e3",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $('Wait 1 Detik').item.json;\n\nconst outputAI =\n  $json.text ||\n  $json.output ||\n  $json.response ||\n  $json.result ||\n  $json.answer ||\n  'Output AI tidak tersedia.';\n\nreturn [\n  {\n    json: {\n      ID_Karyawan: source.ID_Karyawan,\n      Nama: source.Nama,\n      Divisi: source.Divisi,\n      Jabatan: source.Jabatan,\n      Periode: source.Periode,\n      output_gemini: outputAI,\n      telegram_message:\n`📋 *Evaluasi Performa Bulanan*\n\n👤 Nama: ${source.Nama}\n🆔 ID Karyawan: ${source.ID_Karyawan}\n🏢 Divisi: ${source.Divisi || '-'}\n💼 Jabatan: ${source.Jabatan || '-'}\n📅 Periode: ${source.Periode}\n\n${outputAI}\n\n_Dikirim otomatis oleh sistem HR_`\n    }\n  }\n];"
+      },
+      "id": "18e7e31a-b7c2-467c-b470-316a783d0011",
+      "name": "Format Pesan Telegram",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1520,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "995221627",
+        "text": "={{ $json.telegram_message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "335d8041-b299-4a78-99a6-b5270f9a423c",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1312,
+        -16
+      ],
+      "webhookId": "abb3cc59-4923-49f0-8b4d-94321fed5497",
+      "credentials": {
+        "telegramApi": {
+          "id": "pZfoN6mkxo9bDl6k",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const roles = $json.role_tersedia || [];\nconst belumAda = [];\n\nif (!roles.includes('atasan')) belumAda.push('Atasan');\nif (!roles.includes('rekan')) belumAda.push('Rekan');\nif (!roles.includes('bawahan')) belumAda.push('Bawahan');\n\nreturn [\n  {\n    json: {\n      telegram_message:\n`⚠️ *Data Evaluasi Belum Lengkap*\n\n👤 Nama: ${$json.Nama}\n🆔 ID Karyawan: ${$json.ID_Karyawan}\n🏢 Divisi: ${$json.Divisi || '-'}\n💼 Jabatan: ${$json.Jabatan || '-'}\n📅 Periode: ${$json.Periode}\n\nData karyawan ini belum diproses ke AI karena belum memiliki 3 perspektif penilai lengkap.\n\n✅ Perspektif tersedia: ${roles.length ? roles.join(', ') : '-'}\n❌ Belum ada: ${belumAda.length ? belumAda.join(', ') : '-'}\n📊 Total data penilaian: ${$json.total_penilai || 0}\n\nSistem akan memproses otomatis ketika data Atasan, Rekan, dan Bawahan sudah tersedia.`\n    }\n  }\n];"
+      },
+      "id": "9ed4a0e3-5579-4a12-b5ff-7ba0bfc3102c",
+      "name": "Format Pesan Skip",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "PASTE_TELEGRAM_CHAT_ID_HERE",
+        "text": "={{ $json.telegram_message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "69cff3e3-e994-49c7-92ae-c266d03106a0",
+      "name": "Telegram - Data Belum Lengkap",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1824,
+        192
+      ],
+      "webhookId": "0c63f8e9-7c5a-41a4-aebf-e970962cf129",
+      "credentials": {
+        "telegramApi": {
+          "id": "nDwpvfBycAEBFcSj",
+          "name": "Telegram account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -1824,
+        -224
+      ],
+      "id": "50af78d2-7889-423c-9a7b-cef96c5f5c49",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "wZoPCAz0K61HJgXm",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function convertGoogleSerialToPeriod(value) {\n  if (value === null || value === undefined || value === '') return '';\n  const s = String(value).trim();\n  if (/^\\d{4}-\\d{2}$/.test(s)) return s;\n  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(s)) return s.slice(0, 7);\n  if (/^\\d{1,2}\\/\\d{1,2}\\/\\d{4}$/.test(s)) { const [d,m,y] = s.split('/'); return `${y}-${String(m).padStart(2,'0')}`; }\n  if (/^\\d{1,2}-\\d{1,2}-\\d{4}$/.test(s)) { const [d,m,y] = s.split('-'); return `${y}-${String(m).padStart(2,'0')}`; }\n  if (!isNaN(s)) { const date = new Date((Math.floor(Number(s)-25569))*86400*1000); return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`; }\n  return s;\n}\n\nreturn items.map(item => {\n  const row = item.json;\n  const periode = convertGoogleSerialToPeriod(row['Periode Penilaian (Format YYYY-MM, Contoh: 2026-05)'] || row['Periode'] || '');\n  return {\n    json: {\n      ID_Karyawan: String(row['ID Karyawan (Misalnya: EMP001)'] || '').trim(),\n      Nama: String(row['Nama Karyawan yang Dinilai (Misalnya: Budi Santoso)'] || '').trim(),\n      Divisi: String(row['Divisi Karyawan'] || '').trim(),\n      Jabatan: String(row['Jabatan Karyawan (Misalnya: Staff IT Support)'] || '').trim(),\n      Nama_Penilai: String(row['Nama Lengkap Penilai'] || '').trim(),\n      Penilai_Role: String(row['Peran Penilai (Penilai Role)'] || '').trim().toLowerCase(),\n      Skor: Number(row['Skor Performa Umum'] || 0),\n      Kedisiplinan: Number(row['Kedisiplinan'] || 0),\n      Kualitas_Kerja: Number(row['Kualitas Kerja'] || 0),\n      Komunikasi: Number(row['Komunikasi'] || 0),\n      Kerja_Sama_Tim: Number(row['Kerja Sama Tim'] || 0),\n      Tanggung_Jawab: Number(row['Tanggung Jawab'] || 0),\n      Komentar: String(row['Komentar Umum Mengenai Performa'] || '').trim(),\n      Kekuatan_Karyawan: String(row['Kekuatan Karyawan'] || '').trim(),\n      Area_Pengembangan: String(row['Area Pengembangan (Hal yang Perlu Ditingkatkan)'] || '').trim(),\n      Rekomendasi_Tindakan: String(row['Rekomendasi Tindakan Pengembangan'] || '').trim(),\n      Periode: periode\n    }\n  };\n}).filter(i => i.json.ID_Karyawan && i.json.Nama && i.json.Penilai_Role && i.json.Periode);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3312,
+        1584
+      ],
+      "id": "be8860d8-4e50-48e7-b618-8f172f010e9e",
+      "name": "Normalize Row"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://wrarynkikiouyieaafpn.supabase.co/rest/v1/performance_reviews",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "PASTE_SUPABASE_ANON_KEY_HERE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer PASTE_SUPABASE_ANON_KEY_HERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"id_karyawan\": \"{{ $json.ID_Karyawan }}\",\n  \"nama\": \"{{ $json.Nama }}\",\n  \"divisi\": \"{{ $json.Divisi }}\",\n  \"jabatan\": \"{{ $json.Jabatan }}\",\n  \"periode\": \"{{ $json.Periode }}\",\n  \"nama_penilai\": \"{{ $json.Nama_Penilai }}\",\n  \"penilai_role\": \"{{ $json.Penilai_Role }}\",\n  \"skor_performa_umum\": {{ $json.Skor }},\n  \"kedisiplinan\": {{ $json.Kedisiplinan }},\n  \"kualitas_kerja\": {{ $json.Kualitas_Kerja }},\n  \"komunikasi\": {{ $json.Komunikasi }},\n  \"kerja_sama_tim\": {{ $json.Kerja_Sama_Tim }},\n  \"tanggung_jawab\": {{ $json.Tanggung_Jawab }},\n  \"komentar\": \"{{ $json.Komentar }}\",\n  \"kekuatan_karyawan\": \"{{ $json.Kekuatan_Karyawan }}\",\n  \"area_pengembangan\": \"{{ $json.Area_Pengembangan }}\",\n  \"rekomendasi_tindakan\": \"{{ $json.Rekomendasi_Tindakan }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3088,
+        1584
+      ],
+      "id": "9aa3595b-6228-45e7-a7f8-435d30994130",
+      "name": "Insert ke Supabase"
+    },
+    {
+      "parameters": {
+        "url": "=https://wrarynkikiouyieaafpn.supabase.co/rest/v1/performance_reviews?id_karyawan=eq.{{ $('Normalize Row').item.json.ID_Karyawan }}&periode=eq.{{ $('Normalize Row').item.json.Periode }}&select=penilai_role,nama_penilai,skor_performa_umum,kedisiplinan,kualitas_kerja,komunikasi,kerja_sama_tim,tanggung_jawab,komentar,kekuatan_karyawan,area_pengembangan,rekomendasi_tindakan",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "PASTE_SUPABASE_ANON_KEY_HERE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer PASTE_SUPABASE_ANON_KEY_HERE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2864,
+        1584
+      ],
+      "id": "b9605d9b-bdc7-4f9e-b7a4-391309a15fc0",
+      "name": "Fetch Semua Evaluasi dari Supabase"
+    },
+    {
+      "parameters": {
+        "jsCode": "const normalized = $('Normalize Row').item.json;\nconst allEvaluasi = $input.item.json;\n\n// allEvaluasi adalah array dari Supabase\nconst evaluasiList = Array.isArray(allEvaluasi) ? allEvaluasi : [];\n\nconst roles = [...new Set(evaluasiList.map(e => String(e.penilai_role || '').trim().toLowerCase()))];\n\nconst adaAtasan = roles.includes('atasan');\nconst adaRekan = roles.includes('rekan');\nconst adaBawahan = roles.includes('bawahan');\n\nreturn [{\n  json: {\n    ID_Karyawan: normalized.ID_Karyawan,\n    Nama: normalized.Nama,\n    Divisi: normalized.Divisi,\n    Jabatan: normalized.Jabatan,\n    Periode: normalized.Periode,\n    evaluasi: evaluasiList,\n    total_penilai: evaluasiList.length,\n    role_tersedia: roles,\n    data_lengkap: adaAtasan && adaRekan && adaBawahan\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2640,
+        1584
+      ],
+      "id": "ec89a0fe-1888-4b02-827c-45da2fa8c5f4",
+      "name": "Cek Kelengkapan Role"
+    },
+    {
+      "parameters": {
+        "url": "=https://wrarynkikiouyieaafpn.supabase.co/rest/v1/performance_review_processed?id_karyawan=eq.{{ $json.ID_Karyawan }}&periode=eq.{{ $json.Periode }}&select=id",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "PASTE_SUPABASE_ANON_KEY_HERE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer PASTE_SUPABASE_ANON_KEY_HERE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2208,
+        1424
+      ],
+      "id": "d015060e-64d4-44a4-858a-4e31a3fcab41",
+      "name": "Cek Sudah Diproses?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.item.json;\nconst arr = Array.isArray(result) ? result : [];\nreturn [{ json: { sudah_diproses: arr.length > 0 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1984,
+        1424
+      ],
+      "id": "f2dfb1a1-8a1d-43db-baac-f2ab904e8541",
+      "name": "Parse Hasil Cek"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-processed",
+              "leftValue": "={{ $json.sudah_diproses }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1760,
+        1424
+      ],
+      "id": "0a919924-b313-46bc-9021-77b58bdc6369",
+      "name": "IF Belum Diproses?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://wrarynkikiouyieaafpn.supabase.co/rest/v1/performance_review_processed",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "PASTE_SUPABASE_ANON_KEY_HERE"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer PASTE_SUPABASE_ANON_KEY_HERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"id_karyawan\": \"{{ $('Cek Kelengkapan Role').item.json.ID_Karyawan }}\",\n  \"periode\": \"{{ $('Cek Kelengkapan Role').item.json.Periode }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1536,
+        1408
+      ],
+      "id": "9637307b-48cc-474c-9b39-3926face431c",
+      "name": "Tandai Sudah Diproses"
+    },
+    {
+      "parameters": {
+        "chatId": "995221627",
+        "text": "={{ $json.telegram_message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -656,
+        1408
+      ],
+      "id": "01c9c188-a486-4396-9510-edeef0c11dc0",
+      "name": "Telegram - Kirim Hasil",
+      "webhookId": "aa1cc755-f97c-4654-83a3-89d1ff0847ab",
+      "credentials": {
+        "telegramApi": {
+          "id": "pZfoN6mkxo9bDl6k",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1FdSla086eQzzImWE1T1G8cdKoDi5-H-VI1rfEPSw4Po",
+          "mode": "list",
+          "cachedResultName": "Performance Review 360 Derajat Karyawan (Jawaban)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1931838202,
+          "mode": "list",
+          "cachedResultName": "Form Responses 1"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3520,
+        1584
+      ],
+      "id": "566f3e1d-0d86-4807-b5a1-9793cae0ddbd",
+      "name": "Google Sheets Trigger1",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "Zi9tLxBX8dzalS0w",
+          "name": "Google Sheets Trigger account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-lengkap",
+              "leftValue": "={{ $json.data_lengkap }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2432,
+        1584
+      ],
+      "id": "e9aa53ec-acac-44f4-b400-1537066f0c31",
+      "name": "IF Data Lengkap?1"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1328,
+        1408
+      ],
+      "id": "152dbaf3-69a0-4359-b80a-28adbb3eaf3b",
+      "name": "Wait 1 Detik1",
+      "webhookId": "wait-perf-review-v2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Buatkan ringkasan evaluasi performa karyawan berdasarkan data penilaian 360 derajat berikut.\n\nData Karyawan:\n- ID Karyawan: {{ $('Cek Kelengkapan Role').item.json.ID_Karyawan }}\n- Nama Karyawan: {{ $('Cek Kelengkapan Role').item.json.Nama }}\n- Divisi: {{ $('Cek Kelengkapan Role').item.json.Divisi }}\n- Jabatan: {{ $('Cek Kelengkapan Role').item.json.Jabatan }}\n- Periode: {{ $('Cek Kelengkapan Role').item.json.Periode }}\n\nData Evaluasi 360 Derajat:\n{{ JSON.stringify($('Cek Kelengkapan Role').item.json.evaluasi, null, 2) }}\n\nInstruksi:\n1. Analisis data dari 3 perspektif penilai: Atasan, Rekan, dan Bawahan.\n2. Gunakan skor performa umum, kedisiplinan, kualitas kerja, komunikasi, kerja sama tim, dan tanggung jawab sebagai dasar analisis.\n3. Gunakan komentar umum, kekuatan karyawan, area pengembangan, dan rekomendasi tindakan sebagai bahan kesimpulan.\n4. Jangan hanya menyalin komentar dari penilai.\n5. Buat hasil evaluasi yang formal, objektif, konstruktif, dan cocok dikirim ke Manajer HR.\n6. Jika terdapat perbedaan penilaian antar role penilai, jelaskan secara netral.\n\nFormat jawaban wajib:\n\n*Kekuatan Utama:*\n1. ...\n2. ...\n3. ...\n\n*Area Pengembangan:*\n1. ...\n2. ...\n3. ...\n\n*Rekomendasi Tindakan:*\n1. ...\n2. ...\n\n*Kesimpulan Singkat:*\n...",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -1120,
+        1408
+      ],
+      "id": "ecb6a636-997b-4649-9847-01bdfb83406b",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $('Cek Kelengkapan Role').item.json;\nconst outputAI = $json.text || $json.output || $json.response || $json.result || $json.answer || 'Output AI tidak tersedia.';\n\nreturn [{\n  json: {\n    ID_Karyawan: source.ID_Karyawan,\n    Nama: source.Nama,\n    Divisi: source.Divisi,\n    Jabatan: source.Jabatan,\n    Periode: source.Periode,\n    output_gemini: outputAI,\n    telegram_message:\n`📋 *Evaluasi Performa Bulanan*\n\n👤 Nama: ${source.Nama}\n🆔 ID Karyawan: ${source.ID_Karyawan}\n🏢 Divisi: ${source.Divisi || '-'}\n💼 Jabatan: ${source.Jabatan || '-'}\n📅 Periode: ${source.Periode}\n\n${outputAI}\n\n_Dikirim otomatis oleh sistem HR_`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        1408
+      ],
+      "id": "994e3648-0167-46a2-a035-ec59d5404301",
+      "name": "Format Pesan Telegram1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('Cek Kelengkapan Role').item.json;\nconst roles = d.role_tersedia || [];\nconst belumAda = [];\nif (!roles.includes('atasan')) belumAda.push('Atasan');\nif (!roles.includes('rekan')) belumAda.push('Rekan');\nif (!roles.includes('bawahan')) belumAda.push('Bawahan');\n\nreturn [{\n  json: {\n    telegram_message:\n`⚠️ *Data Evaluasi Belum Lengkap*\n\n👤 Nama: ${d.Nama}\n🆔 ID Karyawan: ${d.ID_Karyawan}\n🏢 Divisi: ${d.Divisi || '-'}\n💼 Jabatan: ${d.Jabatan || '-'}\n📅 Periode: ${d.Periode}\n\nBelum diproses karena perspektif penilai belum lengkap.\n\n✅ Tersedia: ${roles.length ? roles.join(', ') : '-'}\n❌ Belum ada: ${belumAda.length ? belumAda.join(', ') : '-'}\n📊 Total penilaian masuk: ${d.total_penilai || 0}\n\nSistem akan otomatis memproses saat data Atasan, Rekan, dan Bawahan tersedia.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2208,
+        1744
+      ],
+      "id": "990f3d62-493b-4737-91e7-6b9b81fa420d",
+      "name": "Format Pesan Skip1"
+    },
+    {
+      "parameters": {
+        "chatId": "995221627",
+        "text": "={{ $json.telegram_message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1984,
+        1744
+      ],
+      "id": "72447ed3-b61a-4ecb-b950-b7f35b8da26a",
+      "name": "Telegram - Data Belum Lengkap1",
+      "webhookId": "aff82cc7-e9d0-4acc-89d7-00ac60d8106b",
+      "credentials": {
+        "telegramApi": {
+          "id": "pZfoN6mkxo9bDl6k",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -1104,
+        1264
+      ],
+      "id": "6b55224b-6207-4e00-aca2-0ccc5a4db7ff",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "wZoPCAz0K61HJgXm",
+          "name": "Groq account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Trigger Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Trigger Row": {
+      "main": [
+        [
+          {
+            "node": "Filter & Group Same Period",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter & Group Same Period": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Proses Selesai",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF Data Lengkap?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Data Lengkap?": {
+      "main": [
+        [
+          {
+            "node": "Wait 1 Detik",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Pesan Skip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 1 Detik": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Format Pesan Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Pesan Telegram": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Pesan Skip": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Data Belum Lengkap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram - Data Belum Lengkap": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Row": {
+      "main": [
+        [
+          {
+            "node": "Insert ke Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert ke Supabase": {
+      "main": [
+        [
+          {
+            "node": "Fetch Semua Evaluasi dari Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Semua Evaluasi dari Supabase": {
+      "main": [
+        [
+          {
+            "node": "Cek Kelengkapan Role",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cek Kelengkapan Role": {
+      "main": [
+        [
+          {
+            "node": "IF Data Lengkap?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cek Sudah Diproses?": {
+      "main": [
+        [
+          {
+            "node": "Parse Hasil Cek",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Hasil Cek": {
+      "main": [
+        [
+          {
+            "node": "IF Belum Diproses?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Belum Diproses?": {
+      "main": [
+        [
+          {
+            "node": "Tandai Sudah Diproses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tandai Sudah Diproses": {
+      "main": [
+        [
+          {
+            "node": "Wait 1 Detik1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Normalize Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Data Lengkap?1": {
+      "main": [
+        [
+          {
+            "node": "Cek Sudah Diproses?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Pesan Skip1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 1 Detik1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "Format Pesan Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Pesan Telegram1": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Kirim Hasil",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Pesan Skip1": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Data Belum Lengkap1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "494ca2eb-6705-4553-8cab-d4832fc472c9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b766258bef240b4657e5d370a0210a1fd10e3fe15565b3312d7b17c83a8cf202"
+  },
+  "id": "8zOZvOVkTxpVKh9e",
+  "tags": []
+}
